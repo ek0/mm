@@ -1,6 +1,8 @@
 #ifndef _MM_H_
 #define _MM_H_
 
+#include "mm_export_config.h"
+
 #include <Windows.h>
 #include <stdint.h>
 
@@ -23,7 +25,7 @@ struct MMState
     DllProc   entry_point;
 };
 
-int ManualDllLoad(struct MMState* state, const char* path);
-int ManualDllUnload(struct MMState* state);
+int MM_EXPORT ManualDllLoad(struct MMState* state, const char* path);
+int MM_EXPORT ManualDllUnload(struct MMState* state);
 
 #endif // _MM_H_
