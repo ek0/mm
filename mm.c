@@ -95,12 +95,14 @@ int ManualDllLoad(struct MMState *state, const char *path)
     size_t i = 0;
     size_t delta = 0;
 
+    // TODO: Check if path valid
     hFile = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if(hFile == INVALID_HANDLE_VALUE)
     {
         return MM_FILE_NOT_FOUND;
     }
     file_size = GetFileSize(hFile, NULL);
+    strncpy_s(state->dll_path, strlen(path), path, MAX_PATH);
     file_buffer = (char*)malloc(file_size);
     if(!file_buffer)
     {

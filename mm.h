@@ -21,6 +21,7 @@ enum MMError
 
 struct MMState
 {
+    char      dll_path[MAX_PATH];
     uintptr_t dll_base_addr;
     DllProc   entry_point;
 };
