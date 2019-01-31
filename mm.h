@@ -3,6 +3,10 @@
 
 #include "mm_export_config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <Windows.h>
 #include <stdint.h>
 
@@ -28,5 +32,9 @@ struct MMState
 
 int MM_EXPORT ManualDllLoad(struct MMState* state, const char* path);
 int MM_EXPORT ManualDllUnload(struct MMState* state);
+
+#ifdef __cpluscplus
+}
+#endif
 
 #endif // _MM_H_
