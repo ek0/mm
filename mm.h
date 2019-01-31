@@ -3,12 +3,13 @@
 
 #include "mm_export_config.h"
 
+#include <Windows.h>
+#include <stdint.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <Windows.h>
-#include <stdint.h>
 
 typedef BOOL (*DllProc)(HINSTANCE, DWORD, LPVOID);
 
