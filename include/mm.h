@@ -6,7 +6,6 @@
 #include <Windows.h>
 #include <stdint.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,7 +33,7 @@ struct MMState
 int MM_EXPORT ManualDllLoad(struct MMState* state, const char* path);
 int MM_EXPORT ManualDllUnload(struct MMState* state);
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 
