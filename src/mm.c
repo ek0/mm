@@ -84,11 +84,8 @@ int FixImports(struct MMState *state, PIMAGE_IMPORT_DESCRIPTOR import_directory)
     return MM_OK;
 }
 
-int ManualDllLoad(struct MMState *state, const char *path)
+int ManualDllLoad(struct MMState *state, const char *data)
 {
-    char* file_buffer = NULL;
-    DWORD file_size = 0, number_of_bytes_read = 0;
-    HANDLE hFile = INVALID_HANDLE_VALUE;
     PIMAGE_DOS_HEADER dos_header = NULL;
     PIMAGE_NT_HEADERS nt_headers = NULL;
     PIMAGE_SECTION_HEADER section_header = NULL;
@@ -99,37 +96,13 @@ int ManualDllLoad(struct MMState *state, const char *path)
     size_t delta = 0;
     BOOL result = FALSE;
 
-    // TODO: Check if path valid
-    hFile = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-    if(hFile == INVALID_HANDLE_VALUE)
-    {
-        return MM_FILE_NOT_FOUND;
-    }
-    file_size = GetFileSize(hFile, NULL);
-    strncpy_s(state->dll_path, MAX_PATH, path, strlen(path));
-    file_buffer = (char*)malloc(file_size);
-    if(!file_buffer)
-    {
-        printf("[-] error allocating file buffer\n");
-        CloseHandle(hFile);
-        return MM_ALLOC_ERROR;
-    }
-    if(!ReadFile(hFile, file_buffer, file_size, &number_of_bytes_read, NULL))
-    {
-        printf("[-] error allocating file buffer\n");
-        free(file_buffer);
-        CloseHandle(hFile);
-        return MM_GENERIC_ERROR; // TODO: fix errors
-    }
-    // File not needed anymroe, closing
-    CloseHandle(hFile);
-    dos_header = (PIMAGE_DOS_HEADER)file_buffer;
-    nt_headers = (PIMAGE_NT_HEADERS)(file_buffer + dos_header->e_lfanew);
+    dos_header = (PIMAGE_DOS_HEADER)data;
+    nt_headers = (PIMAGE_NT_HEADERS)(data + dos_header->e_lfanew);
     if(dos_header->e_magic != IMAGE_DOS_SIGNATURE ||
        nt_headers->Signature != IMAGE_NT_SIGNATURE)
     {
-        printf("Invalid file format");
-        free(file_buffer);
+        printf("Invalid file format\n");
+        //free(data);
         return MM_INVALID_FILE_FORMAT;
     }
     // Allocating new space for the DLL to be mapped
@@ -138,22 +111,22 @@ int ManualDllLoad(struct MMState *state, const char *path)
     if(!image)
     {
         printf("[-] error allocating DLL buffer\n");
-        free(file_buffer);
+        //free(data);
         return MM_ALLOC_ERROR;
     }
     // Copying headers
-    if (!memcpy((void*)image, file_buffer, nt_headers->OptionalHeader.SizeOfHeaders))
+    if (!memcpy((void*)image, data, nt_headers->OptionalHeader.SizeOfHeaders))
     {
         printf("[-] error copying DLL into space\n");
         free((void*)image);
-        free(file_buffer);
+        //free(data);
         return MM_GENERIC_ERROR;
     }
     section_header = (PIMAGE_SECTION_HEADER)(nt_headers + 1);
     // Copying sections into mapped space
     for(i = 0; i < nt_headers->FileHeader.NumberOfSections; i++)
     {
-        memcpy((void*)(image + section_header[i].VirtualAddress), file_buffer + section_header[i].PointerToRawData, section_header[i].SizeOfRawData);
+        memcpy((void*)(image + section_header[i].VirtualAddress), data + section_header[i].PointerToRawData, section_header[i].SizeOfRawData);
     }
     base_relocation = (PIMAGE_BASE_RELOCATION)(image + nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
     import_directory = (PIMAGE_IMPORT_DESCRIPTOR)(image + nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
@@ -170,6 +143,41 @@ int ManualDllLoad(struct MMState *state, const char *path)
         result = state->entry_point((HINSTANCE)image, DLL_PROCESS_ATTACH, NULL);
     }
     return result ? MM_OK : MM_ERROR_CALLING_OEP;
+}
+
+int ManualDllLoadFromFile(struct MMState *state, const char *path)
+{
+    char* file_buffer = NULL;
+    DWORD file_size = 0, number_of_bytes_read = 0;
+    HANDLE hFile = INVALID_HANDLE_VALUE;
+    int result = 0;
+
+    hFile = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    if(hFile == INVALID_HANDLE_VALUE)
+    {
+        return MM_FILE_NOT_FOUND;
+    }
+    file_size = GetFileSize(hFile, NULL);
+    strncpy_s(state->dll_path, MAX_PATH, path, strlen(path));
+    file_buffer = (char*)malloc(file_size);
+    if(!file_buffer)
+    {
+        printf("[-] error allocating file buffer\n");
+        CloseHandle(hFile);
+        return MM_ALLOC_ERROR;
+    }
+    if(!ReadFile(hFile, file_buffer, file_size, &number_of_bytes_read, NULL))
+    {
+        printf("[-] error reading file\n");
+        free(file_buffer);
+        CloseHandle(hFile);
+        return MM_GENERIC_ERROR; // TODO: fix errors
+    }
+    // File not needed anymroe, closing
+    CloseHandle(hFile);
+    result = ManualDllLoad(state, file_buffer);
+    free(file_buffer);
+    return result;
 }
 
 int ManualDllUnload(struct MMState *state)

@@ -31,8 +31,9 @@ struct MMState
     DllProc   entry_point;
 };
 
-int MM_EXPORT ManualDllLoad(struct MMState* state, const char* path);
-int MM_EXPORT ManualDllUnload(struct MMState* state);
+int MM_EXPORT ManualDllLoadFromFile(struct MMState *state, const char *path);
+int MM_EXPORT ManualDllLoad(struct MMState *state, const char *data);
+int MM_EXPORT ManualDllUnload(struct MMState *state);
 
 #ifdef __cplusplus
 }
